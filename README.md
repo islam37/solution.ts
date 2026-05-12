@@ -16,71 +16,199 @@ This repository contains solutions to a TypeScript assignment covering basic to 
 - Reduce-based Calculations
 
 ---
+# 🟦 TypeScript: Interfaces vs Types & Union/Intersection Types
 
-# 📘 Blog Post (TypeScript Concepts)
+> A concise guide to understanding two of TypeScript's most powerful — and most misunderstood — features.
 
 ---
 
-## 1. Interfaces vs Types in TypeScript
+## 📖 Table of Contents
 
-In TypeScript, both `interface` and `type` are used to define the structure of objects. However, they have some important differences.
+- [Interfaces vs Types](#-interfaces-vs-types)
+  - [Key Differences](#key-differences)
+  - [When to Use Which](#when-to-use-which)
+- [Union & Intersection Types](#-union--intersection-types)
+  - [Union Types](#union-types-)
+  - [Intersection Types](#intersection-types-)
+- [Quick Reference](#-quick-reference)
+- [Further Reading](#-further-reading)
 
-### 🔹 Interface
+---
 
-- Used mainly to define object structure
-- Supports inheritance using `extends`
-- Best suited for object-oriented programming
+## 🔷 Interfaces vs Types
 
-```ts id="i1"
+Both `interface` and `type` can describe the shape of an object, but they have meaningful differences.
+
+### Key Differences
+
+| Feature | `interface` | `type` |
+|---|---|---|
+| Declaration merging | ✅ Yes | ❌ No |
+| Extends / Implements | ✅ Yes (via `extends`) | ✅ Yes (via `&` intersection) |
+| Primitive aliases | ❌ No | ✅ Yes |
+| Union / Intersection | ❌ No | ✅ Yes |
+| Computed properties | ❌ Limited | ✅ Yes |
+| Tuple types | ❌ No | ✅ Yes |
+
+---
+
+### 1. Declaration Merging (Interfaces only)
+
+```ts
 interface User {
   name: string;
+}
+
+interface User {
   age: number;
 }
 
-interface Admin extends User {
-  role: string;
+// ✅ Merged automatically
+const user: User = { name: "Alice", age: 30 };
+```
+
+> `type` does **not** support this — redeclaring a type alias is a compile error.
+
+---
+
+### 2. Extending
+
+```ts
+// Interface extending interface
+interface Animal {
+  name: string;
+}
+interface Dog extends Animal {
+  breed: string;
 }
 
-🔹 Type
-More flexible than interfaces
-Can define union, primitive, function, and object types
-Cannot be reopened like interfaces
+// Type extending type (via intersection)
+type Animal = { name: string };
+type Dog = Animal & { breed: string };
+```
 
-type User = {
-  name: string;
-  age: number;
+---
+
+### 3. Primitives, Unions & Tuples (Types only)
+
+```ts
+type ID = string | number;           // union alias
+type Point = [number, number];       // tuple
+type Nullable<T> = T | null;         // generic utility
+```
+
+---
+
+### When to Use Which
+
+| Use `interface` when… | Use `type` when… |
+|---|---|
+| Defining object/class shapes | You need unions or intersections |
+| Building extensible APIs or libraries | Working with primitives or tuples |
+| You want declaration merging | You need computed / mapped types |
+
+> **Rule of thumb:** Prefer `interface` for objects, `type` for everything else.
+
+---
+
+## 🔶 Union & Intersection Types
+
+### Union Types `|`
+
+A union type means a value can be **one of several types**. Think of it as **"OR"**.
+
+```ts
+type StringOrNumber = string | number;
+
+function formatInput(value: StringOrNumber): string {
+  if (typeof value === "string") {
+    return value.toUpperCase();
+  }
+  return value.toFixed(2);
+}
+
+console.log(formatInput("hello")); // "HELLO"
+console.log(formatInput(3.14159)); // "3.14"
+```
+
+#### Discriminated Unions (Advanced Pattern)
+
+```ts
+type Circle = { kind: "circle"; radius: number };
+type Square = { kind: "square"; side: number };
+type Shape = Circle | Square;
+
+function getArea(shape: Shape): number {
+  switch (shape.kind) {
+    case "circle": return Math.PI * shape.radius ** 2;
+    case "square": return shape.side ** 2;
+  }
+}
+```
+
+---
+
+### Intersection Types `&`
+
+An intersection type combines **multiple types into one**. Think of it as **"AND"**.
+
+```ts
+type Serializable = { serialize: () => string };
+type Loggable     = { log: (msg: string) => void };
+
+type Logger = Serializable & Loggable;
+
+const logger: Logger = {
+  serialize: () => JSON.stringify({ ts: Date.now() }),
+  log: (msg) => console.log(`[LOG] ${msg}`),
 };
+```
 
-type ID = string | number;
+#### Merging Object Types
 
-| Feature          | Interface     | Type                    |
-| ---------------- | ------------- | ----------------------- |
-| Object structure | Yes           | Yes                     |
-| Union types      | No            | Yes                     |
-| Extending        | Yes (extends) | Yes (via intersections) |
-| Flexibility      | Medium        | High                    |
+```ts
+type Person  = { name: string; age: number };
+type Employee = { company: string; role: string };
 
+type Staff = Person & Employee;
 
-2. The keyof Keyword in TypeScript
-
-The keyof keyword is used to extract the keys of an object type as a union of string literals.
-
-type User = {
-  name: string;
-  age: number;
-  email: string;
+const staff: Staff = {
+  name: "Bob",
+  age: 28,
+  company: "Acme Corp",
+  role: "Engineer",
 };
+```
 
-type UserKeys = keyof User;
+---
 
-👉 Here, UserKeys becomes:
-"name" | "age" | "email"
+## 🗂 Quick Reference
 
-🔹 Practical Use Case
+```ts
+// ── Interfaces ──────────────────────────────────────────
+interface Point { x: number; y: number }          // basic shape
+interface Named extends Point { label: string }   // extends
 
-👉 This ensures that only valid keys of the object can be used, making the code safer and type-safe.
+// ── Types ───────────────────────────────────────────────
+type ID     = string | number;                    // union
+type Coord  = [number, number];                   // tuple
+type Entity = Point & { id: ID };                 // intersection
 
-🧠 Summary
-interface → best for object structure and extension
-type → more flexible, supports unions and advanced types
-keyof → extracts object keys as a union type for safer access
+// ── Union narrowing ──────────────────────────────────────
+function process(input: string | null) {
+  if (input === null) return "empty";
+  return input.trim();
+}
+```
+
+---
+
+## 📚 Further Reading
+
+- [TypeScript Handbook — Interfaces](https://www.typescriptlang.org/docs/handbook/2/objects.html)
+- [TypeScript Handbook — Union Types](https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#union-types)
+- [TypeScript Handbook — Intersection Types](https://www.typescriptlang.org/docs/handbook/2/objects.html#intersection-types)
+- [TypeScript Deep Dive](https://basarat.gitbook.io/typescript/)
+
+---
+
